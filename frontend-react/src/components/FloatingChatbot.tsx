@@ -9,8 +9,29 @@ const FloatingChatbot: React.FC = () => {
     const [messages, setMessages] = useState<{ role: 'user' | 'bot', content: string }[]>([
         { role: 'bot', content: 'AetherX AI: Online. Monitoring active zones. How can I assist you?' }
     ]);
+    const [language, setLanguage] = useState("en");
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
+
+    const languages = [
+        { code: 'en', name: 'English', flag: '🇺🇸' },
+        { code: 'hi', name: 'Hindi', flag: '🇮🇳' },
+        { code: 'mr', name: 'Marathi', flag: '🇮🇳' },
+        { code: 'es', name: 'Spanish', flag: '🇪🇸' },
+        { code: 'fr', name: 'French', flag: '🇫🇷' },
+        { code: 'ja', name: 'Japanese', flag: '🇯🇵' }
+    ];
+
+    const getGreeting = (lang: string) => {
+        switch (lang) {
+            case 'hi': return 'AetherX AI: ऑनलाइन। सक्रिय क्षेत्रों की निगरानी। मैं आपकी क्या सहायता कर सकता हूँ?';
+            case 'mr': return 'AetherX AI: ऑनलाइन. सक्रिय क्षेत्रांचे निरीक्षण सुरू आहे. मी तुम्हाला कशी मदत करू शकतो?';
+            case 'es': return 'AetherX AI: En línea. Monitoreo de zonas activas. ¿En qué puedo ayudarte?';
+            case 'fr': return 'AetherX AI: En ligne. Surveillance des zones actives. Comment puis-je vous aider ?';
+            case 'ja': return 'AetherX AI: オンライン。アクティブゾーンを監視中。何かお手伝いしましょうか？';
+            default: return 'AetherX AI: Online. Monitoring active zones. How can I assist you?';
+        }
+    };
 
     const handleSend = async () => {
         if (!input.trim() || loading) return;
@@ -20,7 +41,7 @@ const FloatingChatbot: React.FC = () => {
         setLoading(true);
 
         try {
-            const response = await sendChatMessage(userMsg);
+            const response = await sendChatMessage(userMsg, "user-1", language);
             setMessages(prev => [...prev, { role: 'bot', content: response.reply }]);
         } catch (error) {
             console.error("Chat error", error);
@@ -50,16 +71,41 @@ const FloatingChatbot: React.FC = () => {
                                 <span className="text-[10px] uppercase text-blue-400/80 font-mono tracking-wider">Secure Channel</span>
                             </div>
                         </div>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-white/10 text-gray-400" onClick={() => setIsOpen(false)}>
-                            <Minimize2 className="w-3 h-3" />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                            {/* Language Selector */}
+                            <div className="relative group">
+                                <button className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-white/10 text-xs font-medium text-gray-300 transition-colors border border-transparent hover:border-white/5">
+                                    <span>{languages.find(l => l.code === language)?.flag}</span>
+                                    <span className="uppercase">{language}</span>
+                                </button>
+                                <div className="absolute right-0 top-full mt-1 w-32 bg-[#0a0a0a] border border-white/10 rounded-xl overflow-hidden shadow-xl opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 pointer-events-none group-hover:pointer-events-auto transition-all duration-200 z-50">
+                                    {languages.map(lang => (
+                                        <button
+                                            key={lang.code}
+                                            onClick={() => {
+                                                setLanguage(lang.code);
+                                                setMessages(prev => [...prev, { role: 'bot', content: getGreeting(lang.code) }]);
+                                            }}
+                                            className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-white/10 transition-colors ${language === lang.code ? 'bg-blue-500/10 text-blue-400' : 'text-gray-400'}`}
+                                        >
+                                            <span>{lang.flag}</span>
+                                            {lang.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-white/10 text-gray-400" onClick={() => setIsOpen(false)}>
+                                <Minimize2 className="w-3 h-3" />
+                            </Button>
+                        </div>
                     </CardHeader>
 
                     <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
                         <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/10">
                             {messages.map((m, i) => (
                                 <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-1`}>
-                                    <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm ${m.role === 'user'
+                                    <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm whitespace-pre-wrap leading-relaxed ${m.role === 'user'
                                         ? 'bg-blue-600 text-white rounded-tr-none'
                                         : 'bg-white/10 text-gray-200 border border-white/5 rounded-tl-none'
                                         }`}>
@@ -81,7 +127,7 @@ const FloatingChatbot: React.FC = () => {
                         <div className="p-3 border-t border-white/5 bg-white/[0.02] flex gap-2">
                             <input
                                 className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 text-white placeholder:text-gray-500"
-                                placeholder="Type command..."
+                                placeholder={`Type command... (${language.toUpperCase()})`}
                                 value={input}
                                 onChange={e => setInput(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && handleSend()}

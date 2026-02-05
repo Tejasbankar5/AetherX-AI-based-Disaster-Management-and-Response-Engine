@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mic, MicOff, Activity } from 'lucide-react';
 import { Card } from './ui/card';
+import { sendChatMessage } from '../lib/api';
 
 declare global {
     interface Window {
@@ -12,6 +13,12 @@ const VoiceCommander: React.FC = () => {
     const [isListening, setIsListening] = useState(false);
     const [transcript, setTranscript] = useState('');
     const [feedback, setFeedback] = useState('');
+    const [processing, setProcessing] = useState(false);
+
+    // Debug mount
+    useEffect(() => {
+        console.log("VoiceCommander mounted");
+    }, []);
 
     useEffect(() => {
         if (!('webkitSpeechRecognition' in window)) {
@@ -22,6 +29,8 @@ const VoiceCommander: React.FC = () => {
         const recognition = new window.webkitSpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = false;
+        // Default to English, but ideal would be to sync with Chatbot language. 
+        // For now, we'll auto-detect or default to 'en-US' and let backend handle intent.
         recognition.lang = 'en-US';
 
         recognition.onstart = () => {
@@ -29,10 +38,10 @@ const VoiceCommander: React.FC = () => {
             setFeedback("Listening...");
         };
 
-        recognition.onresult = (event: any) => {
+        recognition.onresult = async (event: any) => {
             const text = event.results[0][0].transcript;
             setTranscript(text);
-            processCommand(text);
+            await processCommand(text);
         };
 
         recognition.onend = () => {
@@ -49,28 +58,40 @@ const VoiceCommander: React.FC = () => {
 
     }, []);
 
-    const processCommand = (text: string) => {
-        const lowerText = text.toLowerCase();
+    const processCommand = async (text: string) => {
+        setProcessing(true);
+        setFeedback("Processing...");
 
-        if (lowerText.includes('focus on') || lowerText.includes('go to')) {
-            const city = lowerText.replace('focus on', '').replace('go to', '').trim();
-            setFeedback(`Navigating to ${city}...`);
-            speak(`Moving satellite view to ${city}`);
-            window.dispatchEvent(new CustomEvent('voice-command', {
-                detail: { type: 'FOCUS', payload: city }
-            }));
-        } else if (lowerText.includes('deploy') || lowerText.includes('send')) {
-            const type = lowerText.includes('ambulance') ? 'Medical' : lowerText.includes('fire') ? 'Fire' : 'Police';
-            setFeedback(`Deploying ${type} Units...`);
-            speak(`Deploying nearest ${type} units immediately.`);
-            window.dispatchEvent(new CustomEvent('voice-command', {
-                detail: { type: 'DEPLOY', payload: type }
-            }));
-        } else if (lowerText.includes('status') || lowerText.includes('report')) {
-            setFeedback("Generating Report...");
-            speak("System operational. Active disasters: 3. Resources available: 84 percent. No critical warnings.");
-        } else {
-            setFeedback("Command not recognized.");
+        try {
+            // Send to backend AI for intelligent processing
+            // We treat voice as a chat message to get AI reasoning
+            const response = await sendChatMessage(text, "voice-user");
+
+            setFeedback("Executing...");
+            speak(response.reply);
+
+            // Check for specific keywords in response or rely on backend to return structured actions later.
+            // For now, we maintain the client-side dispatch for immediate visual feedback if the AI agrees.
+
+            const lowerText = text.toLowerCase();
+            if (lowerText.includes('focus') || lowerText.includes('go to')) {
+                const city = lowerText.replace('focus on', '').replace('go to', '').trim();
+                window.dispatchEvent(new CustomEvent('voice-command', {
+                    detail: { type: 'FOCUS', payload: city }
+                }));
+            }
+
+        } catch (error) {
+            console.error("Voice command failed", error);
+            setFeedback("Failed to execute.");
+            speak("I was unable to process that command.");
+        } finally {
+            setProcessing(false);
+            // Clear feedback after delay
+            setTimeout(() => {
+                setFeedback("");
+                setTranscript("");
+            }, 5000);
         }
     };
 
@@ -85,7 +106,7 @@ const VoiceCommander: React.FC = () => {
         <div className="fixed bottom-24 right-6 z-[100] flex flex-col items-end gap-2 pointer-events-none">
             <div className={`pointer-events-auto transition-all duration-300 ${transcript ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                 <Card className="bg-black/80 backdrop-blur-md border border-blue-500/30 text-white px-4 py-2 rounded-xl shadow-2xl flex items-center gap-3">
-                    <Activity className="w-4 h-4 text-blue-400 animate-pulse" />
+                    <Activity className={`w-4 h-4 text-blue-400 ${processing ? 'animate-spin' : 'animate-pulse'}`} />
                     <div className="flex flex-col">
                         <span className="text-xs text-blue-300 font-mono tracking-wider uppercase">Voice Command</span>
                         <span className="text-sm font-bold">"{transcript}"</span>
