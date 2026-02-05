@@ -8,15 +8,13 @@ import SimulationPage from './pages/Simulation';
 import HelpDesk from './pages/HelpDesk';
 import LandingPage from './pages/LandingPage';
 import Navbar from './components/Navbar';
-import FloatingChatbot from './components/FloatingChatbot';
-import VoiceCommander from './components/VoiceCommander';
+
 
 function App() {
   return (
     <Router>
       <Navbar />
-      <FloatingChatbot />
-      <VoiceCommander />
+
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
