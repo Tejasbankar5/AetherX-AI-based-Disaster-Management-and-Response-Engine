@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Shield, LayoutDashboard, HelpCircle, Newspaper, Menu, X } from 'lucide-react';
+import { Shield, LayoutDashboard, HelpCircle, Zap, Menu, X } from 'lucide-react';
 
 const Navbar: React.FC = () => {
     const [scrolled, setScrolled] = useState(false);
@@ -16,17 +16,17 @@ const Navbar: React.FC = () => {
     }, []);
 
     const navLinks = [
-        { name: 'Ops Center', path: '/operation-office', icon: <LayoutDashboard size={16} /> },
+        { name: 'Mission Control', path: '/dashboard', icon: <LayoutDashboard size={16} /> },
+        { name: 'Ops Center', path: '/operation-office', icon: <Shield size={16} /> },
         { name: 'Help Desk', path: '/help-desk', icon: <HelpCircle size={16} /> },
-        { name: 'Simulation', path: '/simulation', icon: <Shield size={16} /> },
-        { name: 'News', path: '/citizen', icon: <Newspaper size={16} /> },
+        { name: 'Simulation', path: '/simulation', icon: <Zap size={16} /> },
     ];
 
     return (
         <nav
             className={`fixed top-0 left-0 w-full z-[100] transition-all duration-500 ${scrolled
-                    ? 'py-4 bg-background/80 backdrop-blur-xl border-b border-white/5 shadow-2xl'
-                    : 'py-8 bg-transparent'
+                ? 'py-4 bg-background/80 backdrop-blur-xl border-b border-white/5 shadow-2xl'
+                : 'py-8 bg-transparent'
                 }`}
         >
             <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
@@ -49,8 +49,8 @@ const Navbar: React.FC = () => {
                             key={link.path}
                             to={link.path}
                             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 ${location.pathname === link.path
-                                    ? 'bg-cyan-500 text-black shadow-[0_0_20px_rgba(6,182,212,0.4)]'
-                                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                ? 'bg-cyan-500 text-black shadow-[0_0_20px_rgba(6,182,212,0.4)]'
+                                : 'text-gray-400 hover:text-white hover:bg-white/5'
                                 }`}
                         >
                             {link.icon}
@@ -78,8 +78,8 @@ const Navbar: React.FC = () => {
                                 to={link.path}
                                 onClick={() => setMobileMenuOpen(false)}
                                 className={`flex items-center gap-4 p-4 rounded-xl text-sm font-bold uppercase tracking-widest ${location.pathname === link.path
-                                        ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
-                                        : 'text-gray-400 hover:text-white'
+                                    ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
+                                    : 'text-gray-400 hover:text-white'
                                     }`}
                             >
                                 {link.icon}
