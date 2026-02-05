@@ -69,6 +69,7 @@ frontend-react/
 ├── data/              # 📊 Datasets and processed data
 └── scripts/           # 🔧 Database seeding and utilities
 ```
+```
 ├── src/
 │   ├── components/    # 🧩 Reusable UI components
 │   │   ├── Dashboard/     # Dashboard widgets
