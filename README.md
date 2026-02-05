@@ -47,15 +47,10 @@ graph TB
 ```
 
 </div>
-IN Github Repo Backend is Inside Frontend Directory;
+
 ### Backend Architecture (Python/FastAPI)
 ```
-
-
-### Frontend Architecture (React/TypeScript)
-```
-frontend-react/
-   backend/
+backend/
 ├── app/
 │   ├── api/           # 🔌 REST API endpoints
 │   │   ├── chatbot.py     # AI chatbot integration
@@ -69,7 +64,10 @@ frontend-react/
 ├── data/              # 📊 Datasets and processed data
 └── scripts/           # 🔧 Database seeding and utilities
 ```
+
+### Frontend Architecture (React/TypeScript)
 ```
+frontend-react/
 ├── src/
 │   ├── components/    # 🧩 Reusable UI components
 │   │   ├── Dashboard/     # Dashboard widgets
@@ -359,9 +357,4 @@ Need help? We're here for you:
   <img src="https://img.shields.io/github/forks/username/aetherx?style=social" alt="GitHub forks">
   <img src="https://img.shields.io/github/watchers/username/aetherx?style=social" alt="GitHub watchers">
 </div>
-
-
-
-this is our readme just show the structure as this as by mistake we have put backend under frontend folder on github 
-
 
