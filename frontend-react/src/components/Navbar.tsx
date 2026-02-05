@@ -11,14 +11,23 @@ const Navbar: React.FC = () => {
     const [emergencyOpen, setEmergencyOpen] = useState(false);
     const location = useLocation();
 
-    // Scroll effect for glassmorphism
+    // Scroll effect for glassmorphism (only relevant for Landing Page)
     useEffect(() => {
+        if (location.pathname !== '/') {
+            setScrolled(true);
+            return;
+        }
+
         const handleScroll = () => {
             setScrolled(window.scrollY > 20);
         };
+
+        // Initialize state based on current scroll
+        handleScroll();
+
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+    }, [location.pathname]);
 
     const navLinks = [
         { name: 'Mission Control', path: '/dashboard' },

@@ -274,49 +274,7 @@ const SimulationPage: React.FC = () => {
     return (
         <div className="flex flex-col h-screen bg-background text-white overflow-hidden font-sans selection:bg-cyan-500/30 pt-24">
             {/* Header */}
-            <header className="px-6 h-16 flex items-center justify-between border-b border-white/5 bg-background/80 backdrop-blur-xl z-50 shrink-0 relative">
-                <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-cyan-600/10 border border-cyan-500/30 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.2)]">
-                        <Activity className="w-5 h-5 text-cyan-400" />
-                    </div>
-                    <div>
-                        <h1 className="text-lg font-black tracking-tight text-white leading-tight font-[Outfit]">
-                            AETHER<span className="text-cyan-500">X</span>
-                        </h1>
-                        <div className="flex items-center gap-2 text-xs font-medium text-gray-400">
-                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.8)]"></span>
-                            DISASTER SIMULATION ENVIRONMENT
-                        </div>
-                    </div>
-                </div>
 
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={handleStartSimulation}
-                        disabled={loading}
-                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/50 rounded-lg text-xs font-bold uppercase tracking-wider transition-all hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] font-[Outfit]"
-                    >
-                        <PlayCircle size={14} />
-                        New Simulation
-                    </button>
-                    <div className="flex items-center gap-3 px-4 py-1.5 bg-white/5 border border-white/10 rounded-full backdrop-blur-sm">
-                        <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div>
-                            <span className="text-xs font-semibold text-gray-300">{zones.length} Active Zones</span>
-                        </div>
-                        <div className="w-px h-3 bg-white/10"></div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.5)]"></div>
-                            <span className="text-xs font-semibold text-gray-300">{resources.length} Resources</span>
-                        </div>
-                        <div className="w-px h-3 bg-white/10"></div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                            <span className="text-xs text-gray-500 font-mono">{lastUpdate.toLocaleTimeString()}</span>
-                        </div>
-                    </div>
-                </div>
-            </header>
 
             <div className="flex flex-1 overflow-hidden relative">
                 {/* Left Panel: Controls */}

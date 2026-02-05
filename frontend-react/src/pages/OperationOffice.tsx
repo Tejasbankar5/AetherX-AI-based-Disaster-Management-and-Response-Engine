@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Shield } from 'lucide-react';
 import ResourceSidebar from '../components/ResourceSidebar';
 import DisasterMap from '../components/DisasterMap';
+import FloatingChatbot from '../components/FloatingChatbot';
+import VoiceCommander from '../components/VoiceCommander';
 import { fetchSimulationData, fetchSafeAreas, allocateResources, dispatchResources, type Resource, type DisasterZone, type AllocationPlan, type SafeArea, deleteDisaster, deleteResourcesBulk } from '../lib/api';
 
 const OperationOffice: React.FC = () => {
@@ -225,6 +227,8 @@ const OperationOffice: React.FC = () => {
                     </div>
                 </div>
             </div>
+            <FloatingChatbot />
+            <VoiceCommander />
         </div>
     );
 };
