@@ -187,6 +187,7 @@ export interface DisasterZone {
     vulnerability_score: number;
     required_resources: Record<string, number>;
     status?: string; // "Active", "Processing", "Resolved"
+    description?: string;
 }
 
 export interface Allocation {

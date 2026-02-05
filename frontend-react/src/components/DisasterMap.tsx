@@ -7,7 +7,7 @@ import { useEffect, useState, useMemo } from 'react';
 import type { Resource, DisasterZone, SafeArea, AllocationPlan, SOSSignal } from '../lib/api';
 import { getDistance } from '../lib/utils';
 import { getSeverityColor, getResourceStatusColor, getResourceIcon, getDisasterIcon } from '../utils/mapUtils';
-import { Layers, Wind, Activity, Map as MapIcon, Globe, Siren } from 'lucide-react';
+import { Layers, Wind, Activity, Map as MapIcon, Globe, Siren, Shield } from 'lucide-react';
 
 // ... (keep existing icon code) ...
 // Fix for Leaflet default icon issues
@@ -91,16 +91,20 @@ interface DisasterMapProps {
     allocationPlan: AllocationPlan | null;
     sosSignals?: SOSSignal[];
     showSafeAreas: boolean;
+    showSOS?: boolean;
+    onToggleSOS?: () => void;
     mapView: { lat: number; lng: number; zoom: number } | null;
     showClusters?: boolean;
     showRoutes?: boolean;
+    showEvacuationRoutes?: boolean;
+    onToggleEvacuation?: () => void;
+    onResolveSOS?: (id: string) => void;
 }
 
 // ... (keep MapController and WindOverlay) ...
 const MapController = ({ view }: { view: { lat: number; lng: number; zoom: number } | null }) => {
     const map = useMap();
-    const lastViewRef = useState<{ lat: number; lng: number; zoom: number } | null>(null);
-    const [lastView, setLastView] = lastViewRef;
+    const [lastView, setLastView] = useState<{ lat: number; lng: number; zoom: number } | null>(null);
 
     useEffect(() => {
         if (view) {
@@ -187,9 +191,14 @@ const DisasterMap: React.FC<DisasterMapProps> = ({
     allocationPlan,
     sosSignals = [],
     showSafeAreas,
+    showSOS = false,
+    onToggleSOS,
     mapView,
     showClusters = true,
-    showRoutes = true
+    showRoutes = true,
+    showEvacuationRoutes = false,
+    onToggleEvacuation,
+    onResolveSOS
 }) => {
     const [mapStyle, setMapStyle] = useState<'dark' | 'satellite'>('dark');
     const [showWind, setShowWind] = useState(false);
@@ -234,7 +243,7 @@ const DisasterMap: React.FC<DisasterMapProps> = ({
                 )}
 
                 {/* SOS Signals - High Priority */}
-                {sosSignals.map(sos => (
+                {showSOS && sosSignals.map(sos => (
                     <Marker key={sos.id} position={[sos.lat, sos.lng]} icon={sosIcon} zIndexOffset={1000}>
                         <Popup>
                             <div className="text-gray-900 text-sm font-bold min-w-[200px]">
@@ -246,6 +255,15 @@ const DisasterMap: React.FC<DisasterMapProps> = ({
                                     <p>Type: <span className="uppercase">{sos.type}</span></p>
                                     <p className="text-xs text-gray-500">{new Date(sos.timestamp).toLocaleTimeString()}</p>
                                     <p className="text-xs font-mono text-gray-400 mt-1">ID: {sos.id.slice(0, 8)}</p>
+
+                                    {onResolveSOS && (
+                                        <button
+                                            onClick={() => onResolveSOS(sos.id)}
+                                            className="w-full mt-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-[10px] font-bold rounded transition-colors uppercase tracking-wider shadow-sm"
+                                        >
+                                            Mark as Resolved
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </Popup>
@@ -375,6 +393,11 @@ const DisasterMap: React.FC<DisasterMapProps> = ({
                                         {zone.type}
                                     </strong>
                                 </div>
+                                {zone.description && (
+                                    <div className="mb-3 p-2 bg-blue-50/50 border border-blue-200 rounded text-[10px] text-blue-800 font-medium italic leading-tight">
+                                        "{zone.description}"
+                                    </div>
+                                )}
                                 <div className="space-y-1.5">
                                     <div className="flex justify-between items-center">
                                         <span className="text-gray-600">Severity:</span>
@@ -470,6 +493,45 @@ const DisasterMap: React.FC<DisasterMapProps> = ({
                         </Polyline>
                     );
                 })}
+                {/* Evacuation Routes */}
+                {
+                    showEvacuationRoutes && zones.map(zone => {
+                        if (safeAreas.length === 0) return null;
+
+                        // Find nearest safe area
+                        const nearest = safeAreas.reduce((prev, curr) => {
+                            const distPrev = getDistance(zone.location.lat, zone.location.lng, prev.location.lat, prev.location.lng);
+                            const distCurr = getDistance(zone.location.lat, zone.location.lng, curr.location.lat, curr.location.lng);
+                            return distCurr < distPrev ? curr : prev;
+                        });
+
+                        return (
+                            <Polyline
+                                key={`evac-${zone.id}`}
+                                positions={[
+                                    [zone.location.lat, zone.location.lng],
+                                    [nearest.location.lat, nearest.location.lng]
+                                ]}
+                                pathOptions={{
+                                    color: '#22c55e',
+                                    weight: 4,
+                                    dashArray: '15, 10',
+                                    opacity: 0.8,
+                                    className: 'evacuation-route'
+                                }}
+                            >
+                                <Popup>
+                                    <div className="text-gray-900 text-xs">
+                                        <div className="font-bold text-green-600 mb-1">EVACUATION PATH</div>
+                                        <div>Target: {nearest.type}</div>
+                                        <div>Distance: {getDistance(zone.location.lat, zone.location.lng, nearest.location.lat, nearest.location.lng).toFixed(1)}km</div>
+                                    </div>
+                                </Popup>
+                            </Polyline>
+                        );
+                    })
+                }
+
             </MapContainer>
 
             {/* NDEM-Style Top Right Controls */}
@@ -500,10 +562,22 @@ const DisasterMap: React.FC<DisasterMapProps> = ({
                         <Wind size={14} /> Wind Vector
                     </button>
                     <button
+                        onClick={() => onToggleEvacuation?.()}
+                        className={`w-full text-left p-1.5 rounded transition flex items-center gap-2 text-xs font-bold ${showEvacuationRoutes ? 'bg-green-900/40 text-green-400 border border-green-500/30' : 'text-gray-400 hover:bg-gray-700'}`}
+                    >
+                        <Shield size={14} /> Evacuation Plan
+                    </button>
+                    <button
                         onClick={() => setShowHeatmap(!showHeatmap)}
                         className={`w-full text-left p-1.5 rounded transition flex items-center gap-2 text-xs ${showHeatmap ? 'bg-red-900/40 text-red-300 border border-red-500/30' : 'text-gray-400 hover:bg-gray-700'}`}
                     >
                         <Activity size={14} /> Heatmap
+                    </button>
+                    <button
+                        onClick={() => onToggleSOS?.()}
+                        className={`w-full text-left p-1.5 rounded transition flex items-center gap-2 text-xs font-bold ${showSOS ? 'bg-red-500/20 text-red-500 border border-red-500/30' : 'text-gray-400 hover:bg-gray-700'}`}
+                    >
+                        <Siren size={14} /> SOS Signals
                     </button>
                 </div>
             </div>

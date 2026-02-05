@@ -5,19 +5,27 @@ import ResourceSidebar from '../components/ResourceSidebar';
 import DisasterMap from '../components/DisasterMap';
 import FloatingChatbot from '../components/FloatingChatbot';
 import VoiceCommander from '../components/VoiceCommander';
-import { fetchSimulationData, fetchSafeAreas, allocateResources, dispatchResources, type Resource, type DisasterZone, type AllocationPlan, type SafeArea, deleteDisaster, deleteResourcesBulk } from '../lib/api';
+import { useAlert } from '../context/AlertContext';
+import { fetchSimulationData, fetchSafeAreas, allocateResources, dispatchResources, type Resource, type DisasterZone, type AllocationPlan, type SafeArea, deleteDisaster, deleteResourcesBulk, fetchSOSSignals, type SOSSignal, resolveSOS } from '../lib/api';
 
 const OperationOffice: React.FC = () => {
     const navigate = useNavigate();
+    const { showAlert, showConfirm } = useAlert();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [accessCode, setAccessCode] = useState('');
+    const knownZonesRef = React.useRef<Set<string>>(new Set());
+    const knownSOSRef = React.useRef<Set<string>>(new Set());
+    const isInitialLoadRef = React.useRef(true);
 
     // State
     const [resources, setResources] = useState<Resource[]>([]);
     const [zones, setZones] = useState<DisasterZone[]>([]);
+    const [sosSignals, setSosSignals] = useState<SOSSignal[]>([]);
     const [safeAreas, setSafeAreas] = useState<SafeArea[]>([]);
     const [allocationPlan, setAllocationPlan] = useState<AllocationPlan | null>(null);
     const [showSafeAreas, setShowSafeAreas] = useState(false);
+    const [showSOS, setShowSOS] = useState(true);
+    const [showEvacuationRoutes, setShowEvacuationRoutes] = useState(false);
     const [loading, setLoading] = useState(false);
     const [dispatchStatus, setDispatchStatus] = useState<string | null>(null);
     const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
@@ -29,7 +37,7 @@ const OperationOffice: React.FC = () => {
         if (accessCode === 'admin123') {
             setIsAuthenticated(true);
         } else {
-            alert('Invalid Access Code');
+            showAlert('Access Denied', 'The access code you entered is invalid. Please try again.', 'error');
         }
     };
 
@@ -38,8 +46,55 @@ const OperationOffice: React.FC = () => {
         setLoading(true);
         try {
             const data = await fetchSimulationData();
+            const sos = await fetchSOSSignals();
+
+            // Check for new disasters
+            data.zones.forEach(zone => {
+                if (!knownZonesRef.current.has(zone.id)) {
+                    knownZonesRef.current.add(zone.id);
+                    // Only alert if this isn't the first ever load
+                    if (!isInitialLoadRef.current) {
+                        showAlert(
+                            `NEW DISASTER DETECTED`,
+                            `Type: ${zone.type}\nLocation: [${zone.location.lat.toFixed(2)}, ${zone.location.lng.toFixed(2)}]\nSeverity: Level ${zone.severity}`,
+                            'warning'
+                        );
+                    }
+                }
+            });
+
+            // Check for new SOS signals
+            sos.forEach(s => {
+                if (!knownSOSRef.current.has(s.id)) {
+                    knownSOSRef.current.add(s.id);
+                    if (!isInitialLoadRef.current) {
+                        showAlert(
+                            `🚨 CRITICAL SOS ACTIVATION`,
+                            `Type: ${s.type}\nStatus: ${s.status}\n\nImmediate deployment recommended.`,
+                            'error'
+                        );
+                        // Auto-toggle SOS layer if a new one arrives
+                        setShowSOS(true);
+                    }
+                }
+            });
+
+            isInitialLoadRef.current = false;
+
+            // Cleanup removed items
+            const currentZoneIds = new Set(data.zones.map(z => z.id));
+            knownZonesRef.current.forEach(id => {
+                if (!currentZoneIds.has(id)) knownZonesRef.current.delete(id);
+            });
+
+            const currentSOSIds = new Set(sos.map(s => s.id));
+            knownSOSRef.current.forEach(id => {
+                if (!currentSOSIds.has(id)) knownSOSRef.current.delete(id);
+            });
+
             setResources(data.resources);
             setZones(data.zones);
+            setSosSignals(sos);
             const safe = await fetchSafeAreas();
             setSafeAreas(safe);
             setLastUpdate(new Date());
@@ -53,7 +108,18 @@ const OperationOffice: React.FC = () => {
         if (isAuthenticated) {
             loadSimulationData();
             const interval = setInterval(loadSimulationData, 5000);
-            return () => clearInterval(interval);
+
+            const handleVoiceCommand = (e: any) => {
+                if (e.detail?.type === 'SIMULATE') {
+                    showAlert('SIMULATION STARTED', 'Emergency simulation injected. Monitoring for updates...', 'info');
+                }
+            };
+            window.addEventListener('voice-command', handleVoiceCommand);
+
+            return () => {
+                clearInterval(interval);
+                window.removeEventListener('voice-command', handleVoiceCommand);
+            };
         }
     }, [isAuthenticated]);
 
@@ -69,7 +135,7 @@ const OperationOffice: React.FC = () => {
             setAllocationPlan(plan);
         } catch (error) {
             console.error(error);
-            alert("Allocation failed");
+            showAlert('Allocation Failed', 'System was unable to calculate an optimal allocation plan at this time.', 'error');
         } finally {
             setLoading(false);
         }
@@ -82,16 +148,34 @@ const OperationOffice: React.FC = () => {
             const res = await dispatchResources(allocationPlan);
             setDispatchStatus(res.message);
 
-            // Track active missions persistently
+            // Show High-Visibility Popup Confirmation
+            const unitCount = allocationPlan.allocations.length;
+            const rationale = allocationPlan.ai_rationale || "Resources optimized for maximum coverage and minimum ETA.";
 
+            showAlert(
+                "🚀 MISSION AUTHORIZED",
+                `Successfully dispatched ${unitCount} units to active disaster zones.\n\nAI Strategy: ${rationale}`,
+                "success"
+            );
 
             setTimeout(() => setDispatchStatus(null), 5000);
             setAllocationPlan(null);
             loadSimulationData(); // Refresh to show status changes
         } catch (error) {
-            alert("Dispatch failed");
+            showAlert('Dispatch Failed', 'The dispatch command could not be processed. Please check unit status.', 'error');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleResolveSOS = async (id: string) => {
+        try {
+            await resolveSOS(id);
+            loadSimulationData();
+            showAlert("SOS RESOLVED", "Emergency signal cleared from tactical display.", "success");
+        } catch (error) {
+            console.error("Failed to resolve SOS", error);
+            showAlert("Error", "Failed to resolve SOS signal.", "error");
         }
     };
 
@@ -99,30 +183,28 @@ const OperationOffice: React.FC = () => {
         const zone = zones.find(z => z.id === zoneId);
         if (!zone) return;
 
-        if (!window.confirm(`⚠️ DELETE ALERT?\n\nType: ${zone.type}\nSeverity: ${zone.severity}\n\nThis will remove:\n✓ The disaster alert\n✓ ALL resources (cleanup)\n\nContinue?`)) return;
-
-        setLoading(true);
-        try {
-            // Bulk delete all resources
-            const allResourceIds = resources.map(r => r.id);
-            if (allResourceIds.length > 0) {
-                await deleteResourcesBulk(allResourceIds);
+        showConfirm(
+            '⚠️ DELETE ALERT?',
+            `Type: ${zone.type}\nSeverity: ${zone.severity}\n\nThis will remove the disaster alert and trigger resource cleanup. Continue?`,
+            async () => {
+                setLoading(true);
+                try {
+                    const allResourceIds = resources.map(r => r.id);
+                    if (allResourceIds.length > 0) {
+                        await deleteResourcesBulk(allResourceIds);
+                    }
+                    await deleteDisaster(zoneId);
+                    if (allocationPlan) setAllocationPlan(null);
+                    loadSimulationData();
+                    showAlert('Success', 'Incident and related resources have been removed.', 'success');
+                } catch (err) {
+                    console.error(err);
+                    showAlert('Error', 'Failed to remove data. Please try again.', 'error');
+                } finally {
+                    setLoading(false);
+                }
             }
-
-            // Delete zone
-            await deleteDisaster(zoneId);
-
-            // UI Cleanup
-            if (allocationPlan) {
-                setAllocationPlan(null);
-            }
-            loadSimulationData();
-        } catch (err) {
-            console.error(err);
-            alert("Failed to remove data.");
-        } finally {
-            setLoading(false);
-        }
+        );
     };
 
     // If not authenticated, show login
@@ -183,6 +265,8 @@ const OperationOffice: React.FC = () => {
                 onClearSelection={() => setSelectedZoneId(null)}
                 selectedZoneId={selectedZoneId}
                 onDeleteZone={handleDeleteZone}
+                sosSignals={sosSignals}
+                onResolveSOS={handleResolveSOS}
             />
 
             <div className="flex-1 flex flex-col h-full relative">
@@ -191,9 +275,13 @@ const OperationOffice: React.FC = () => {
                     <DisasterMap
                         resources={resources}
                         zones={zones}
+                        sosSignals={sosSignals}
                         allocationPlan={allocationPlan}
                         safeAreas={showSafeAreas ? safeAreas : []}
                         showSafeAreas={showSafeAreas}
+                        showSOS={showSOS}
+                        onToggleSOS={() => setShowSOS(!showSOS)}
+                        onResolveSOS={handleResolveSOS}
                         mapView={selectedZoneId
                             ? (() => {
                                 const z = zones.find(z => z.id === selectedZoneId);
@@ -203,6 +291,8 @@ const OperationOffice: React.FC = () => {
                         }
                         // User request: Don't show visual paths for plan
                         showRoutes={false}
+                        showEvacuationRoutes={showEvacuationRoutes}
+                        onToggleEvacuation={() => setShowEvacuationRoutes(!showEvacuationRoutes)}
                     />
                 </div>
 

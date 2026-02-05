@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Navigation, CheckCircle, Map as MapIcon, LogIn, LayoutDashboard, Newspaper, ExternalLink, BrainCircuit, RefreshCw, Trash2 } from 'lucide-react';
-import { type Resource, type DisasterZone, type AllocationPlan, fetchDisasterNews, type NewsItem, sendChatMessage, requestReinforcements } from '../lib/api';
-import { getResourceIcon } from '../utils/mapUtils';
+import { Shield, Navigation, CheckCircle, Map as MapIcon, LogIn, LayoutDashboard, Newspaper, ExternalLink, BrainCircuit, RefreshCw, Trash2, Siren } from 'lucide-react';
+import { type Resource, type DisasterZone, type AllocationPlan, fetchDisasterNews, type NewsItem, sendChatMessage, requestReinforcements, type SOSSignal } from '../lib/api';
+import { getResourceIcon, getDisasterIcon } from '../utils/mapUtils';
 
 interface ResourceSidebarProps {
     resources: Resource[];
@@ -19,6 +19,8 @@ interface ResourceSidebarProps {
     onClearSelection: () => void;
     selectedZoneId?: string | null;
     onDeleteZone?: (id: string) => void;
+    sosSignals: SOSSignal[];
+    onResolveSOS?: (id: string) => void;
 }
 
 const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
@@ -35,7 +37,9 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
     onAlertClick,
     onClearSelection,
     selectedZoneId,
-    onDeleteZone
+    onDeleteZone,
+    sosSignals,
+    onResolveSOS
 }) => {
     // ... [rest of state code omitted for brevity while applying logic in return] ...
 
@@ -154,6 +158,52 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                 {/* 1. DASHBOARD TAB */}
                 {activeTab === 'dashboard' && (
                     <div className="p-4 space-y-6">
+                        {/* SOS Priority List */}
+                        {sosSignals.length > 0 && (
+                            <div className="space-y-3">
+                                <h3 className="text-xs font-bold text-red-500 uppercase tracking-widest pl-1 flex items-center gap-2">
+                                    <Siren className="w-4 h-4 animate-pulse" />
+                                    Active SOS Requests
+                                </h3>
+                                <div className="space-y-2">
+                                    {sosSignals.map(sos => (
+                                        <div
+                                            key={sos.id}
+                                            onClick={() => onAlertClick(sos.lat, sos.lng)}
+                                            className="bg-red-950/30 border border-red-500/50 p-3 rounded-xl hover:bg-red-900/40 cursor-pointer transition-all relative overflow-hidden group shadow-[0_0_15px_rgba(239,68,68,0.1)]"
+                                        >
+                                            <div className="absolute top-0 right-0 w-16 h-16 bg-red-500/5 blur-2xl rounded-full -mr-8 -mt-8"></div>
+                                            <div className="flex justify-between items-start mb-1 relative z-10">
+                                                <span className="text-sm font-black text-red-400 uppercase tracking-tighter">Emergency SOS</span>
+                                                <span className="text-[9px] bg-red-500 text-white px-1.5 py-0.5 rounded font-black animate-pulse">CRITICAL</span>
+                                            </div>
+                                            <div className="flex justify-between items-end relative z-10">
+                                                <div className="space-y-1">
+                                                    <div className="text-[10px] text-gray-300">
+                                                        Type: <span className="text-red-300 font-bold uppercase">{sos.type}</span>
+                                                    </div>
+                                                    <div className="text-[10px] text-gray-500 font-mono">
+                                                        {new Date(sos.timestamp).toLocaleTimeString()}
+                                                    </div>
+                                                </div>
+                                                {onResolveSOS && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onResolveSOS(sos.id);
+                                                        }}
+                                                        className="px-2 py-1 bg-red-500/20 hover:bg-red-500/40 text-red-400 text-[10px] font-bold rounded border border-red-500/30 transition-all uppercase"
+                                                    >
+                                                        Resolve
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Stats Panel */}
                         <div className="grid grid-cols-2 gap-3">
                             <div className="bg-white/5 p-3 rounded-xl border border-white/10 text-center hover:bg-white/10 transition">
@@ -197,7 +247,7 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                                         <table className="w-full text-xs text-left">
                                             <thead className="bg-white/5 text-gray-300 uppercase font-bold text-[10px]">
                                                 <tr>
-                                                    <th className="px-2 py-1">Resource</th>
+                                                    <th className="px-2 py-1">Asset & Target</th>
                                                     <th className="px-2 py-1 text-right">Dist</th>
                                                     <th className="px-2 py-1 text-right">ETA</th>
                                                 </tr>
@@ -205,13 +255,16 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                                             <tbody className="divide-y divide-white/5 bg-transparent">
                                                 {allocationPlan.allocations.map((alloc, idx) => {
                                                     const res = resources.find(r => r.id === alloc.resource_id);
+                                                    const zone = zones.find(z => z.id === alloc.zone_id);
                                                     return (
                                                         <tr key={idx} className="hover:bg-white/5 transition-colors">
                                                             <td className="px-2 py-1.5 flex items-center gap-2">
                                                                 <span className="text-sm">{res ? getResourceIcon(res.type) : '📦'}</span>
-                                                                <div className="flex flex-col">
-                                                                    <span className="font-bold text-gray-200">{res?.type}</span>
-                                                                    <span className="text-[9px] text-gray-500 font-mono">{alloc.resource_id.slice(0, 6)}</span>
+                                                                <div className="flex flex-col truncate max-w-[100px]">
+                                                                    <span className="font-bold text-gray-200 truncate">{res?.type}</span>
+                                                                    <span className="text-[9px] text-cyan-400 font-bold truncate">
+                                                                        ➜ {zone ? getDisasterIcon(zone.type) : '📍'} {zone?.type || 'Unknown'}
+                                                                    </span>
                                                                 </div>
                                                             </td>
                                                             <td className="px-2 py-1.5 text-right font-mono text-cyan-400">
@@ -430,6 +483,11 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                                                 )}
                                             </div>
                                         </div>
+                                        {zone.description && (
+                                            <div className="mb-2 px-1.5 py-1 bg-white/5 border border-white/5 rounded text-[10px] text-gray-400 italic line-clamp-2">
+                                                "{zone.description}"
+                                            </div>
+                                        )}
                                         <div className="flex justify-between items-end">
                                             <div className="text-[10px] text-gray-500">
                                                 Pop: <span className="text-gray-300">{zone.affected_population}</span>
