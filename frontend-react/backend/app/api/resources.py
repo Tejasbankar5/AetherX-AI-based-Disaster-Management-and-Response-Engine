@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from typing import List, Dict
+from typing import List, Dict, Optional
 from app.ml.resource_allocation import AllocationEngine, Resource, DisasterZone, Location, Plan
 from pydantic import BaseModel
 
@@ -208,3 +208,29 @@ async def delete_disaster_endpoint(zone_id: str):
     if not success:
         raise HTTPException(status_code=404, detail="Zone not found")
     return {"message": "Disaster zone removed"}
+
+class IncidentReport(BaseModel):
+    type: str
+    location: Location
+    severity: int
+    description: str
+    affected_population: Optional[int] = None
+
+@router.post("/incident/report")
+async def report_incident(report: IncidentReport):
+    """
+    Handles manual incident reporting from citizens/frontline.
+    Converts a report into a DisasterZone and persists it.
+    """
+    new_zone = DisasterZone(
+        id=f"ZONE-MANUAL-{uuid.uuid4().hex[:6].upper()}",
+        type=report.type,
+        location=report.location,
+        severity=report.severity,
+        affected_population=report.affected_population or random.randint(100, 5000),
+        vulnerability_score=random.random(),
+        required_resources={},
+        description=report.description
+    )
+    await add_zone(new_zone)
+    return {"message": "Incident report captured and prioritized", "id": new_zone.id}

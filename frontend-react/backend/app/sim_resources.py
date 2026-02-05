@@ -32,7 +32,8 @@ async def get_simulation_data(max_distance: int = 5000):
             location=Location(**doc['location']),
             affected_population=doc['affected_population'],
             vulnerability_score=doc['vulnerability_score'],
-            status=doc.get('status', 'Active') # Default to Active
+            status=doc.get('status', 'Active'), # Default to Active
+            description=doc.get('description')
         ))
 
     # Fetch Resources
@@ -91,7 +92,8 @@ async def add_zone(zone: DisasterZone):
         "location": {"lat": zone.location.lat, "lng": zone.location.lng},
         "affected_population": zone.affected_population,
         "vulnerability_score": zone.vulnerability_score,
-        "status": getattr(zone, 'status', 'Active')
+        "status": getattr(zone, 'status', 'Active'),
+        "description": zone.description
     }
     await zones_collection.insert_one(doc)
     return zone
@@ -200,14 +202,16 @@ async def seed_simulation_data():
         severity_map = {"Low": 3, "Medium": 5, "High": 8, "Critical": 10}
         sev_label = random.choice(["Low", "Medium", "High", "Critical"])
         
+        zone_type = random.choice(disaster_types)
         zone = DisasterZone(
             id=f"ZONE-AUTO-{uuid.uuid4().hex[:6].upper()}",
-            type=random.choice(disaster_types),
+            type=zone_type,
             location=Location(lat=lat, lng=lng),
             severity=severity_map[sev_label],
             affected_population=random.randint(500, 50000),
             vulnerability_score=random.random(),
-            required_resources={}
+            required_resources={},
+            description=f"Automated sensor alert: {sev_label} intensity {zone_type} detected."
         )
         await add_zone(zone)
         zones_to_add.append(zone)

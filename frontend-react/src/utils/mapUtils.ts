@@ -1,5 +1,6 @@
 import type { DisasterZone } from '../lib/api';
 import type { LatLngExpression } from 'leaflet';
+import L from 'leaflet';
 
 /**
  * Get color based on disaster severity
@@ -137,4 +138,43 @@ export function getDisasterIcon(type: string): string {
         'Landslide': '⛰️'
     };
     return icons[type] || '⚠️';
+}
+
+/**
+ * Create a specialized Leaflet DivIcon for resources
+ */
+export function createResourceMarkerIcon(status: string, type: string) {
+    const color = getResourceStatusColor(status);
+    const icon = getResourceIcon(type);
+    return L.divIcon({
+        className: 'resource-marker',
+        html: `
+            <div class="relative">
+                <div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 6px rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 24px;">
+                    ${icon}
+                </div>
+                <div style="position: absolute; bottom: -4px; right: -4px; background: ${status === 'Available' ? '#22c55e' : status === 'Deployed' ? '#ef4444' : '#eab308'}; width: 10px; height: 10px; border-radius: 50%; border: 2px solid white;"></div>
+            </div>
+        `,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14]
+    });
+}
+
+/**
+ * Create a specialized Leaflet DivIcon for disaster zones
+ */
+export function createZoneMarkerIcon(severity: number, type: string) {
+    const color = getSeverityColor(severity);
+    const icon = getDisasterIcon(type);
+    return L.divIcon({
+        className: 'zone-marker',
+        html: `
+            <div style="background-color: ${color}44; width: 32px; height: 32px; border-radius: 50%; border: 2px solid ${color}; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 0 10px ${color}66;">
+                ${icon}
+            </div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+    });
 }

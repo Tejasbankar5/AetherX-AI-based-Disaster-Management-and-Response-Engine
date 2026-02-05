@@ -45,7 +45,6 @@ const HelpDeskReport: React.FC<HelpDeskReportProps> = ({ onSubmit }) => {
     const [description, setDescription] = useState('');
     const [isListening, setIsListening] = useState(false);
     const [isSOSActive, setIsSOSActive] = useState(false);
-    const [voiceError, setVoiceError] = useState<string | null>(null);
 
     // 1. Get Geolocation on Mount
     useEffect(() => {
@@ -69,10 +68,8 @@ const HelpDeskReport: React.FC<HelpDeskReportProps> = ({ onSubmit }) => {
 
     // 2. Voice Input Logic
     const toggleListing = () => {
-        setVoiceError(null);
         if (!('webkitSpeechRecognition' in window)) {
-            setVoiceError("Voice input not supported in this browser.");
-            setTimeout(() => setVoiceError(null), 3000);
+            alert("Voice input is not supported in this browser. Please use Chrome.");
             return;
         }
 
@@ -91,13 +88,6 @@ const HelpDeskReport: React.FC<HelpDeskReportProps> = ({ onSubmit }) => {
         recognition.onresult = (event: any) => {
             const transcript = event.results[0][0].transcript;
             setDescription(prev => prev + (prev ? ' ' : '') + transcript);
-        };
-
-        recognition.onerror = (event: any) => {
-            console.error(event.error);
-            setIsListening(false);
-            setVoiceError("Voice error. Try typing.");
-            setTimeout(() => setVoiceError(null), 3000);
         };
 
         recognition.start();
@@ -136,7 +126,7 @@ const HelpDeskReport: React.FC<HelpDeskReportProps> = ({ onSubmit }) => {
                 {/* Header */}
                 <div className="mb-8">
                     <h2 className="text-3xl font-black tracking-tighter flex items-center gap-3 font-[Outfit]">
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70">
+                        <span className="text-white">
                             REPORT INCIDENT
                         </span>
                         <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.6)]" />
@@ -206,7 +196,6 @@ const HelpDeskReport: React.FC<HelpDeskReportProps> = ({ onSubmit }) => {
                         {isListening ? <MicOff size={20} /> : <Mic size={20} />}
                     </button>
                     {isListening && <span className="absolute bottom-5 right-16 text-xs text-red-500 font-bold animate-pulse">Listening...</span>}
-                    {voiceError && <span className="absolute bottom-5 right-16 text-xs text-orange-500 font-bold bg-black/50 px-2 py-1 rounded">{voiceError}</span>}
                 </div>
 
                 {/* SOS Button */}

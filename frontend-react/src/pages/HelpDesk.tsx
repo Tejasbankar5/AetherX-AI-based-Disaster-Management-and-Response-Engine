@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { AlertTriangle, FileText, BarChart3 } from 'lucide-react';
-import { type AllocationPlan, type Resource, type DisasterZone } from '../lib/api';
+import { type AllocationPlan, type Resource, type DisasterZone, submitIncidentReport } from '../lib/api';
 import HelpDeskStatus from './HelpDeskStatus';
 import HelpDeskReport from './HelpDeskReport';
 
@@ -39,18 +39,30 @@ const HelpDesk: React.FC = () => {
         return () => window.removeEventListener('storage', handleStorageChange);
     }, []);
 
-    const handleReportSubmit = (data: any) => {
+    const handleReportSubmit = async (data: any) => {
         console.log("Report Submitted:", data);
-        // In a real app, this would POST to backend.
-        // For now, we simulate success and switch to status view
-        alert("Report Received! Dispatching nearest units.");
-        setActiveTab('status');
+        try {
+            await submitIncidentReport({
+                type: data.type,
+                location: {
+                    lat: data.location[0],
+                    lng: data.location[1],
+                    name: "Manual Report"
+                },
+                severity: 7, // Default medium-high for manual reports
+                description: data.description
+            });
+            alert("Report Received! Dispatching nearest units.");
+            setActiveTab('status');
+        } catch (error) {
+            console.error("Failed to submit report", error);
+            alert("Failed to submit report. Please try again.");
+        }
     };
 
     return (
         <div className="min-h-screen bg-background text-foreground font-sans flex flex-col bg-grid relative overflow-hidden pt-24">
             {/* Background Decorative Elements */}
-            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-blue-900/10 via-background to-background pointer-events-none" />
             <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-violet-500/10 blur-[150px] rounded-full pointer-events-none" />
 
 
@@ -76,7 +88,7 @@ const HelpDesk: React.FC = () => {
                                 : 'text-gray-400 hover:text-white'
                                 }`}
                         >
-                            <BarChart3 size={16} /> My Status
+                            <BarChart3 size={16} /> Resource Status
                         </button>
                     </div>
                 </div>

@@ -27,6 +27,7 @@ class DisasterZone(BaseModel):
     vulnerability_score: float # 0.0 - 1.0 (Elderly, Hospitals, etc.)
     required_resources: Dict[str, int] = {} # Estimated needs
     status: str = "Active" # "Active", "Processing", "Resolved"
+    description: Optional[str] = None
 
 class Allocation(BaseModel):
     resource_id: str
