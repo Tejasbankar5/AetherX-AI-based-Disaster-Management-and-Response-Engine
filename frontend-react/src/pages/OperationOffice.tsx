@@ -297,7 +297,7 @@ const OperationOffice: React.FC = () => {
                 </div>
 
                 {/* Overlay Header */}
-                <div className="absolute top-0 left-0 w-full z-10 pointer-events-none p-6">
+                <div className="absolute top-20 left-0 w-full z-10 pointer-events-none p-6">
                     <div className="flex justify-between items-start pointer-events-auto">
                         <div className="glass-panel px-6 py-4 rounded-full border border-white/10 flex items-center gap-6">
                             <div className="flex flex-col">

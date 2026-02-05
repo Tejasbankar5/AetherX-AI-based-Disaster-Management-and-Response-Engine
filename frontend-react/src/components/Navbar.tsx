@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Shield, LayoutDashboard, HelpCircle, Zap, Menu, X } from 'lucide-react';
+import { Shield, LayoutDashboard, HelpCircle, Zap, Menu, X, Siren } from 'lucide-react';
+import EmergencyOverlay from './EmergencyOverlay';
 
 const Navbar: React.FC = () => {
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [isSOSOpen, setIsSOSOpen] = useState(false);
     const location = useLocation();
 
     useEffect(() => {
@@ -24,7 +26,7 @@ const Navbar: React.FC = () => {
 
     return (
         <nav
-            className={`fixed top-0 left-0 w-full z-[100] transition-all duration-500 ${scrolled
+            className={`fixed top-0 left-0 w-full z-[40] transition-all duration-500 ${scrolled
                 ? 'py-4 bg-background/80 backdrop-blur-xl border-b border-white/5 shadow-2xl'
                 : 'py-8 bg-transparent'
                 }`}
@@ -57,6 +59,15 @@ const Navbar: React.FC = () => {
                             {link.name}
                         </Link>
                     ))}
+
+                    {/* SOS Button */}
+                    <button
+                        onClick={() => setIsSOSOpen(true)}
+                        className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-tighter transition-all duration-300 bg-red-600/10 text-red-500 border border-red-500/20 hover:bg-red-600 hover:text-white hover:shadow-[0_0_30px_rgba(220,38,38,0.4)] animate-pulse ml-2"
+                    >
+                        <Siren size={16} />
+                        SOS
+                    </button>
                 </div>
 
                 {/* Mobile Toggle */}
@@ -86,9 +97,27 @@ const Navbar: React.FC = () => {
                                 {link.name}
                             </Link>
                         ))}
+
+                        {/* Mobile SOS */}
+                        <button
+                            onClick={() => {
+                                setMobileMenuOpen(false);
+                                setIsSOSOpen(true);
+                            }}
+                            className="flex items-center gap-4 p-5 rounded-xl text-lg font-black uppercase tracking-widest bg-red-600 text-white shadow-[0_0_30px_rgba(220,38,38,0.3)]"
+                        >
+                            <Siren size={24} />
+                            EMERGENCY SOS
+                        </button>
                     </div>
                 </div>
             )}
+
+            {/* Global Emergency Overlay */}
+            <EmergencyOverlay
+                isOpen={isSOSOpen}
+                onClose={() => setIsSOSOpen(false)}
+            />
         </nav>
     );
 };

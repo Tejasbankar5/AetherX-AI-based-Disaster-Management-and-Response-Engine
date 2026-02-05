@@ -3,20 +3,19 @@ import { AlertTriangle, Activity, Users, Zap, FileText, Play, Square } from "luc
 import RiskChart from "@/components/Dashboard/RiskChart"
 import WeatherWidget from "@/components/Dashboard/WeatherWidget"
 import { useEffect, useState } from "react"
-import { fetchActiveAlerts, fetchWeather, fetchSimulationData, toggleSimulationMode, getSimulationStatus, fetchSimulationMockData, type WeatherData } from "@/lib/api"
+import { fetchActiveAlerts, fetchSimulationData, toggleSimulationMode, getSimulationStatus, fetchSimulationMockData, fetchDisasterFeeds } from "@/lib/api"
 import DisasterMap from "@/components/Dashboard/Map" // Standard import for SPA
 import IncidentReportDialog from "@/components/Dashboard/IncidentReportDialog"
 
 export default function Dashboard() {
     const [activeAlertsCount, setActiveAlertsCount] = useState<number>(0);
     const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
-    // @ts-ignore - setWeather is used, but weather state is not read directly here
-    const [, setWeather] = useState<WeatherData | null>(null);
     const [simulationMode, setSimulationMode] = useState(false);
     const [showReportDialog, setShowReportDialog] = useState(false);
     const [busyResources, setBusyResources] = useState(0);
     const [totalImpacted, setTotalImpacted] = useState(0);
     const [resourceLoad, setResourceLoad] = useState(0);
+    const [feeds, setFeeds] = useState<import("@/lib/api").DisasterFeedItem[]>([]);
 
     useEffect(() => {
         // Check simulation mode status on mount
@@ -33,12 +32,15 @@ export default function Dashboard() {
                     setBusyResources(mockData.resources_active);
                     setTotalImpacted(mockData.total_impacted);
                     setResourceLoad(mockData.resource_load);
-                    // Note: feeds are handled separately in FeedList
+                    setFeeds(mockData.disaster_feeds);
                 } else {
                     // Fetch real data
                     const alerts = await fetchActiveAlerts();
                     const simData = await fetchSimulationData();
+                    const feedData = await fetchDisasterFeeds();
+
                     setActiveAlertsCount(alerts.length + simData.zones.length);
+                    setFeeds(feedData);
 
                     // Calculate metrics from real data
                     const impacted = simData.zones.reduce((sum, z) => sum + (z.affected_population || 0), 0);
@@ -50,8 +52,6 @@ export default function Dashboard() {
                     setResourceLoad(Math.round((busy / total) * 100));
                 }
 
-                const weatherData = await fetchWeather();
-                setWeather(weatherData);
                 setLastUpdate(new Date());
             } catch (e) {
                 console.error("Failed to fetch dashboard data", e);
@@ -230,7 +230,7 @@ export default function Dashboard() {
                         <WeatherWidget />
 
                         {/* Live Feed List */}
-                        <FeedList />
+                        <FeedList feeds={feeds} />
                     </div>
                 </div>
             </main>
@@ -239,25 +239,7 @@ export default function Dashboard() {
 
 }
 
-function FeedList() {
-    const [feeds, setFeeds] = useState<import("@/lib/api").DisasterFeedItem[]>([]);
-
-    useEffect(() => {
-        // Poll for feeds every 5 seconds to ensure admin sees "first"
-        const load = async () => {
-            try {
-                const api = await import("@/lib/api");
-                const data = await api.fetchDisasterFeeds();
-                setFeeds(data);
-            } catch (e) {
-                console.error("Feed poll failed", e);
-            }
-        };
-        load();
-        const interval = setInterval(load, 5000);
-        return () => clearInterval(interval);
-    }, []);
-
+function FeedList({ feeds }: { feeds: import("@/lib/api").DisasterFeedItem[] }) {
     return (
         <Card className="flex-1 flex flex-col min-h-0">
             <CardHeader className="border-b border-white/5 bg-white/[0.02] py-4 shrink-0">
@@ -272,7 +254,8 @@ function FeedList() {
                         <div key={feed.id} className="p-4 flex items-start gap-3 hover:bg-white/5 transition-colors">
                             <div className={`mt-1 w-2 h-2 rounded-full ${feed.severity === 'Critical' ? 'bg-red-500 animate-pulse' :
                                 feed.severity === 'High' ? 'bg-orange-500' :
-                                    'bg-blue-500'
+                                    feed.severity === 'Medium' ? 'bg-yellow-500' :
+                                        'bg-blue-500'
                                 }`} />
                             <div>
                                 <div className="flex items-center gap-2">

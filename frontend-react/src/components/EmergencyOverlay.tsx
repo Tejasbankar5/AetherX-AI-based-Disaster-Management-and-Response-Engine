@@ -90,7 +90,7 @@ const EmergencyOverlay: React.FC<EmergencyOverlayProps> = ({ isOpen, onClose }) 
     }
 
     return (
-        <div className="fixed inset-0 z-[60] bg-black/95 backdrop-blur-xl animate-in fade-in flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[1000] bg-black/95 backdrop-blur-xl animate-in fade-in flex items-center justify-center p-4">
             {/* Close Button */}
             <button onClick={onClose} className="absolute top-6 right-6 text-white/50 hover:text-white p-2">
                 <X className="w-8 h-8" />

@@ -296,10 +296,6 @@ const DisasterMap: React.FC<DisasterMapProps> = ({
                         }}
                     >
                         {resources
-                            .filter(res => {
-                                if (allocationPlan?.allocations.some(a => a.resource_id === res.id)) return true;
-                                return zones.some(z => getDistance(res.location.lat, res.location.lng, z.location.lat, z.location.lng) <= 200);
-                            })
                             .map(res => (
                                 <Marker
                                     key={res.id}
@@ -343,10 +339,6 @@ const DisasterMap: React.FC<DisasterMapProps> = ({
                     </MarkerClusterGroup>
                 ) : (
                     resources
-                        .filter(res => {
-                            if (allocationPlan?.allocations.some(a => a.resource_id === res.id)) return true;
-                            return zones.some(z => getDistance(res.location.lat, res.location.lng, z.location.lat, z.location.lng) <= 200);
-                        })
                         .map(res => (
                             <Marker
                                 key={res.id}

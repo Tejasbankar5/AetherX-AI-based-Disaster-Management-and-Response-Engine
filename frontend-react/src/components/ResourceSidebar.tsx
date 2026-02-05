@@ -216,6 +216,47 @@ const ResourceSidebar: React.FC<ResourceSidebarProps> = ({
                             </div>
                         </div>
 
+                        {/* Resource Fleet Status */}
+                        <div className="space-y-3">
+                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1 flex items-center justify-between">
+                                <span>Resource Fleet</span>
+                                <span className="text-[9px] bg-white/5 px-1.5 py-0.5 rounded text-gray-500">{resources.length} Total</span>
+                            </h3>
+                            <div className="max-h-[300px] overflow-y-auto pr-1 space-y-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                                {resources.map(res => (
+                                    <div key={res.id} className="bg-white/5 border border-white/5 rounded-xl p-2.5 flex items-center justify-between hover:bg-white/10 transition-colors group">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-lg">
+                                                {getResourceIcon(res.type)}
+                                            </div>
+                                            <div>
+                                                <div className="text-xs font-bold text-gray-200">{res.type}</div>
+                                                <div className="text-[9px] text-gray-500 font-mono uppercase">{res.id.split('-').pop()}</div>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-1">
+                                            <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider border ${res.status === 'Available' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                                                    res.status === 'Deployed' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                                                        'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                                }`}>
+                                                {res.status}
+                                            </span>
+                                            {res.status === 'Deployed' && (
+                                                <div className="flex items-center gap-1 text-[8px] text-gray-500">
+                                                    <Navigation size={8} className="animate-pulse" /> Tracking
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                                {resources.length === 0 && (
+                                    <div className="text-center py-4 text-xs text-gray-500 italic">
+                                        No assets registered in network
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
                         {/* Allocation Plan / Help Desk */}
                         {allocationPlan && (
                             <div className="p-1">

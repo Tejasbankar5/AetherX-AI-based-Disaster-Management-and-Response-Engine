@@ -161,11 +161,6 @@ export default function DisasterMap() {
                             <Circle
                                 center={coords}
                                 radius={severityRadius}
-                                pathOptions={{ color: 'transparent', fillColor: 'transparent' }} // Simplified loop for circle, styling handled in next loop or merged if needed but keeping structure simple to minimize heavy diff
-                            />
-                            <Circle
-                                center={coords}
-                                radius={severityRadius}
                                 pathOptions={{
                                     color: feed.severity === 'Critical' ? '#dc2626' :
                                         feed.severity === 'High' ? '#ea580c' :

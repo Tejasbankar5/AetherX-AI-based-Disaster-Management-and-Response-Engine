@@ -63,7 +63,7 @@ export default function IncidentReportDialog({ isOpen, onClose, onSuccess }: Inc
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <div className="bg-background border border-white/10 rounded-lg shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-white/10">
@@ -128,7 +128,7 @@ export default function IncidentReportDialog({ isOpen, onClose, onSuccess }: Inc
                             <input
                                 type="number"
                                 step="0.0001"
-                                value={formData.location?.lat || ''}
+                                value={formData.location?.lat ?? ''}
                                 onChange={(e) => setFormData({
                                     ...formData,
                                     location: { ...formData.location!, lat: parseFloat(e.target.value) }
@@ -142,7 +142,7 @@ export default function IncidentReportDialog({ isOpen, onClose, onSuccess }: Inc
                             <input
                                 type="number"
                                 step="0.0001"
-                                value={formData.location?.lng || ''}
+                                value={formData.location?.lng ?? ''}
                                 onChange={(e) => setFormData({
                                     ...formData,
                                     location: { ...formData.location!, lng: parseFloat(e.target.value) }
