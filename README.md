@@ -17,7 +17,3 @@ AetherX is an AI-powered disaster management platform that enables predictive ri
 - Computer Vision
 - Web Development
 
-## Getting Started
-
-1. Clone the repository:
-```bash
